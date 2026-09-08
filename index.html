@@ -7,7 +7,7 @@
     <link rel="shortcut icon" href="image/logo.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
+
     <style>
         :root {
             --primary: #ff4d6d;
@@ -43,9 +43,12 @@
         .btn:hover { transform: scale(1.02); box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4); }
         .btn:disabled { opacity: 0.7; cursor: wait; }
 
-        input, textarea { width: 100%; padding: 12px; margin: 6px 0; border-radius: 12px; border: none; font-size: 0.9rem; background: rgba(255,255,255,0.9); color: #333; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 6px 0; border-radius: 12px; border: none; font-size: 0.9rem; background: rgba(255,255,255,0.9); color: #333; }
         textarea { resize: none; overflow: hidden; min-height: 50px; }
-        
+        select { cursor: pointer; font-weight: 600; }
+
+        .field-label { font-size: 0.75rem; text-align: left; margin: 10px 0 5px; color: var(--secondary); }
+
         #status-msg { font-size: 0.85rem; color: #ffb7c5; margin-top: 10px; font-weight: bold; min-height: 1.2rem; }
 
         #game-canvas { background: rgba(0,0,0,0.3); border-radius: 20px; cursor: pointer; margin-bottom: 10px; width: 100%; touch-action: none; }
@@ -63,19 +66,56 @@
 
         .shayari-box { font-size: 1.1rem; font-style: italic; color: #ffb7c5; padding: 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; line-height: 1.6; margin: 20px 0; white-space: pre-line; }
 
-        .slideshow-container { 
-            width: 100%; height: 320px; border-radius: 30px; border: 5px solid #ff4d6d; 
+        .slideshow-container {
+            width: 100%; height: 320px; border-radius: 30px; border: 5px solid var(--primary);
             background-color: #000; margin: 20px 0; position: relative; display: flex;
-            align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            align-items: center; justify-content: center; overflow: hidden; perspective: 900px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 25px rgba(255,77,109,0.35);
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
         }
-        .slideshow-container img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
-        .slide-tag { position: absolute; top: 15px; left: 15px; z-index: 5; background: #ff4d6d; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .slideshow-container img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; backface-visibility: hidden; }
+        .slide-tag { position: absolute; top: 15px; left: 15px; z-index: 5; background: var(--primary); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; transition: background 0.4s ease; }
 
-        .scratch-box { position: relative; width: 100%; height: 130px; background: #fff; border-radius: 20px; overflow: hidden; margin-bottom: 15px; }
-        .scratch-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #222; font-weight: bold; padding: 15px; }
-        #scratch-canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; }
+        @keyframes photoIn {
+            from { opacity: 0; transform: translate(var(--tx-from,0px), var(--ty-from,0px)) scale(var(--scale-from,1)) rotateY(var(--rot-from,0deg)); }
+            to { opacity: 1; transform: translate(0,0) scale(1) rotateY(0deg); }
+        }
+        .gallery-img-anim { animation: photoIn 0.6s cubic-bezier(.22,.61,.36,1) both; }
+
+        .slide-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: 0.3s; }
+        .dot.active-dot { width: 20px; border-radius: 10px; }
+
+        .collage-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0;
+            max-height: 380px; overflow-y: auto; padding: 4px;
+        }
+        .collage-grid::-webkit-scrollbar { display: none; }
+        .collage-grid img {
+            width: 100%; height: 95px; object-fit: cover; border-radius: 14px;
+            border: 3px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            animation: popIn 0.4s ease backwards;
+        }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+        .collage-caption { font-size: 0.85rem; color: #ffd6df; margin-bottom: 5px; }
 
         #typewriter { text-align: left; font-size: 0.95rem; line-height: 1.7; background: rgba(0,0,0,0.5); padding: 25px; border-radius: 20px; min-height: 180px; border-left: 5px solid var(--primary); }
+
+        #qr-container { margin-top: 15px; }
+        #qr-img { margin: 0 auto; display: block; border-radius: 12px; background: #fff; padding: 10px; width: 220px; height: 220px; }
+
+        .scratch-box {
+            position: relative; width: 100%; height: 150px;
+            background: linear-gradient(135deg, #fff, #ffe6ec);
+            border-radius: 20px; overflow: hidden; margin-bottom: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .scratch-content {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            color: #222; font-weight: 600; font-size: 0.95rem; line-height: 1.5; padding: 18px;
+        }
+        #scratch-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; cursor: crosshair; display: block; }
     </style>
 </head>
 <body>
@@ -88,15 +128,28 @@
         <div id="v-creator" class="section">
             <h1>Surprise Maker</h1>
             <input type="text" id="in-name" placeholder="Birthday Person Name">
-            <p style="text-align: left; font-size: 0.8rem; margin: 5px 0 0 5px;">Date of Birth:</p>
+            <p class="field-label">Date of Birth:</p>
             <input type="date" id="in-dob">
             <textarea id="in-msg" placeholder="Heartfelt Long Message........." oninput="autoExpand(this)"></textarea>
-            
-            <p style="font-size: 0.75rem; text-align: left; margin: 10px 0 5px; color: var(--secondary);">Select Memorable Photos from Gallery:</p>
+
+            <p class="field-label">Select Memorable Photos from Gallery:</p>
             <input type="file" id="file-input" multiple accept="image/*" style="background: transparent; color: white; padding-bottom: 5px; cursor: pointer;">
-            
-            <button class="btn" id="main-action-btn" onclick="handleGenerateProcess()">Generate and copy link 🔗</button>
+
+            <p class="field-label">Share via:</p>
+            <select id="share-mode" onchange="updateActionLabel()">
+                <option value="link">Link 🔗</option>
+                <option value="qr">QR Code 📱</option>
+            </select>
+
+            <button class="btn" id="main-action-btn" onclick="handleGenerateProcess()">Generate Link 🔗</button>
             <p id="status-msg"></p>
+
+            <button class="btn" id="copy-again-btn" style="display:none;" onclick="copyAgain()">Copy Link Again 📋</button>
+
+            <div id="qr-container" style="display:none;">
+                <img id="qr-img" alt="QR Code" />
+                <button class="btn" id="save-qr-btn" onclick="saveQR()">Save QR to Device 💾</button>
+            </div>
         </div>
 
         <!-- INTRO -->
@@ -122,7 +175,7 @@
             <h1>Secret Message</h1>
             <div class="scratch-box">
                 <div class="scratch-content">❤️Your smile😊 is my favorite sunshine, and you light up every room you walk into! 🎂🎉 Happy Birthday! 🎁🎈</div>
-                <canvas id="scratch-canvas" width="390" height="130"></canvas>
+                <canvas id="scratch-canvas"></canvas>
             </div>
             <button class="btn" id="scratch-next" style="display:none;" onclick="showView('v-cake')">Continue to Cake ➔</button>
         </div>
@@ -149,10 +202,19 @@
         <div id="v-gallery" class="section">
             <h1>Memories</h1>
             <div class="slideshow-container">
-                <div class="slide-tag" id="slide-num">1 / 1</div>
+                <div class="slide-tag" id="slide-tag">1 / 1</div>
                 <img id="gallery-img" src="" alt="Memory" referrerpolicy="no-referrer">
             </div>
+            <div class="slide-dots" id="slide-dots"></div>
             <button class="btn" id="gallery-btn" onclick="nextPhoto()">Next Memory ➔</button>
+        </div>
+
+        <!-- MEMORY WALL (COLLAGE) -->
+        <div id="v-collage" class="section">
+            <h1>Memory Wall</h1>
+            <p class="collage-caption">Every single moment, together in one place 💕</p>
+            <div class="collage-grid" id="collage-grid"></div>
+            <button class="btn" onclick="showView('v-letter'); startTyping();">Continue to Heart Letter ➔</button>
         </div>
 
         <!-- LETTER -->
@@ -168,11 +230,25 @@
         const UPLOAD_PRESET = "tex4fnwk";
 
         const params = new URLSearchParams(window.location.search);
-        const name = params.get('n'), dob = params.get('d'), msg = params.get('m'), photos = params.get('p');
+        const dataId = params.get('id');
+        let name, dob, msg, photos;
         let calculatedAge = 0;
         let photoArray = [];
         let photoIndex = 0;
         let finalGeneratedLink = "";
+
+        const slideColors = ['#ff4d6d', '#7c4dff', '#00bcd4', '#ffb300', '#43a047', '#e91e63', '#3f51b5'];
+
+        // Different "slide models" — each defines how the next photo flies into view
+        const transitions = [
+            { tx: '360px', ty: '0px',    scale: 1,   rot: '0deg' },   // fly in: right -> left
+            { tx: '-360px', ty: '0px',   scale: 1,   rot: '0deg' },   // fly in: left -> right
+            { tx: '0px', ty: '300px',    scale: 1,   rot: '0deg' },   // fly in: bottom -> top
+            { tx: '0px', ty: '-300px',   scale: 1,   rot: '0deg' },   // fly in: top -> bottom
+            { tx: '0px', ty: '0px',      scale: 0.3, rot: '0deg' },   // zoom burst in
+            { tx: '0px', ty: '0px',      scale: 1,   rot: '110deg' }, // 3D flip in
+            { tx: '260px', ty: '-200px', scale: 0.5, rot: '25deg' },  // diagonal fly + spin
+        ];
 
         const shayaris = [
             "तमन्नाओं से भरी हो जिंदगी,\nख्वाहिशों से भरा हो हर पल,\nदामन भी छोटा लगने लगे,\nइतनी खुशियाँ दे आपको आने वाला कल! \n Happy Birthday🎁🎉",
@@ -182,34 +258,61 @@
             "जन्मदिनको लाखौं लाख शुभकामना \n तिमीले आटेका सबै मनोकामना पूरा हुन \n जिवनमा सधै खुशीयाली छाई रहोस् \n धेरै माया अनि सम्झना \n Happy Birthday 🎉🎁",
             "तिम्रो जीवनमा खुशी रहोस् \n माया सधैं साथ रहोस् \n जीवन उज्यालो बनोस् \n जन्मदिनको शुभकामना 🎁🎉",
             "तिम्रो हरेक दिन खुशी बनोस् \n मुस्कान कहिल्यै नटुटोस् \n जीवन रमाइलो बनोस् \n जन्मदिनको शुभकामना 🎉🎁",
-            
+
         ];
 
-        window.onload = () => {
+        window.onload = async () => {
             initBG();
-            if(name) {
-                document.getElementById('out-name').innerText = `Happy Birthday, ${name}!`;
-                calculatedAge = new Date().getFullYear() - new Date(dob).getFullYear();
-                if(calculatedAge <= 0) calculatedAge = 1;
-                document.getElementById('out-age-text').innerText = `Celebrating ${calculatedAge} years of your light!`;
-                if(photos) photoArray = photos.split('|').filter(u => u.trim() !== "");
-                showView('v-intro');
+            if (dataId) {
+                try {
+                    const res = await fetch(decodeURIComponent(dataId));
+                    const data = await res.json();
+                    name = data.n; dob = data.d; msg = data.m; photoArray = data.p || [];
+
+                    document.getElementById('out-name').innerText = `Happy Birthday, ${name}!`;
+                    calculatedAge = new Date().getFullYear() - new Date(dob).getFullYear();
+                    if (calculatedAge <= 0) calculatedAge = 1;
+                    document.getElementById('out-age-text').innerText = `Celebrating ${calculatedAge} years of your light!`;
+                    showView('v-intro');
+                } catch (e) {
+                    console.error("Failed to load surprise data", e);
+                    showView('v-creator');
+                }
             } else {
                 showView('v-creator');
             }
         };
 
+        function updateActionLabel() {
+            const mode = document.getElementById('share-mode').value;
+            const btn = document.getElementById('main-action-btn');
+            if (!finalGeneratedLink) {
+                btn.style.display = 'block';
+                btn.innerText = mode === 'link' ? 'Generate Link 🔗' : 'Generate QR Code 📱';
+            } else {
+                btn.style.display = 'none';
+                renderShareOutput(mode);
+            }
+        }
+
         async function handleGenerateProcess() {
+            const mode = document.getElementById('share-mode').value;
+            const status = document.getElementById('status-msg');
+            const btn = document.getElementById('main-action-btn');
+
+            if (finalGeneratedLink) {
+                renderShareOutput(mode);
+                return;
+            }
+
             const n = document.getElementById('in-name').value;
             const d = document.getElementById('in-dob').value;
             const files = document.getElementById('file-input').files;
-            const status = document.getElementById('status-msg');
-            const btn = document.getElementById('main-action-btn');
 
             if (!n || !d) return alert("Please fill Name and Birthdate first!");
             if (files.length === 0) return alert("Please select at least one photo!");
 
-            status.innerText = "Generating link...";
+            status.innerText = "Generating...";
             btn.disabled = true;
 
             let urls = [];
@@ -217,7 +320,6 @@
                 const formData = new FormData();
                 formData.append('file', files[i]);
                 formData.append('upload_preset', UPLOAD_PRESET);
-
                 try {
                     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
                         method: 'POST',
@@ -230,25 +332,80 @@
                 }
             }
 
-            if (urls.length > 0) {
-                const m = document.getElementById('in-msg').value;
-                const p = urls.join('|');
-                finalGeneratedLink = `${window.location.href.split('?')[0]}?n=${encodeURIComponent(n)}&d=${d}&m=${encodeURIComponent(m)}&p=${encodeURIComponent(p)}`;
-                
-                navigator.clipboard.writeText(finalGeneratedLink);
-                status.innerText = "Success! Link copied. ✅";
-                btn.innerText = "Copy Link Again 📋";
-                btn.disabled = false;
-                btn.onclick = copyAgain;
-            } else {
+            if (urls.length === 0) {
                 status.innerText = "Error. Please check your internet.";
                 btn.disabled = false;
+                return;
+            }
+
+            const m = document.getElementById('in-msg').value;
+            const payload = JSON.stringify({ n, d, m, p: urls });
+            const blob = new Blob([payload], { type: "application/json" });
+
+            const jsonForm = new FormData();
+            jsonForm.append('file', blob, 'data.json');
+            jsonForm.append('upload_preset', UPLOAD_PRESET);
+
+            try {
+                const jsonRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/raw/upload`, {
+                    method: 'POST',
+                    body: jsonForm
+                });
+                const jsonData = await jsonRes.json();
+                const dUrl = jsonData.secure_url;
+
+                finalGeneratedLink = `${window.location.href.split('?')[0]}?id=${encodeURIComponent(dUrl)}`;
+
+                status.innerText = "";
+                btn.disabled = false;
+                btn.style.display = 'none';
+                renderShareOutput(mode);
+            } catch (error) {
+                console.error(error);
+                status.innerText = "Error. Please check your internet.";
+                btn.disabled = false;
+            }
+        }
+
+        function renderShareOutput(mode) {
+            const status = document.getElementById('status-msg');
+            const copyBtn = document.getElementById('copy-again-btn');
+            const qrContainer = document.getElementById('qr-container');
+
+            if (mode === 'link') {
+                navigator.clipboard.writeText(finalGeneratedLink);
+                status.innerText = "Link copied! ✅";
+                copyBtn.style.display = 'block';
+                qrContainer.style.display = 'none';
+            } else {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(finalGeneratedLink)}`;
+                document.getElementById('qr-img').src = qrUrl;
+                qrContainer.style.display = 'block';
+                copyBtn.style.display = 'none';
+                status.innerText = "QR Code ready! 📱";
             }
         }
 
         function copyAgain() {
             navigator.clipboard.writeText(finalGeneratedLink);
             document.getElementById('status-msg').innerText = "Link copied again! ✅";
+        }
+
+        async function saveQR() {
+            const img = document.getElementById('qr-img');
+            try {
+                const response = await fetch(img.src);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = 'birthday-surprise-qr.png';
+                link.href = blobUrl;
+                link.click();
+                URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error("Save QR failed", error);
+                window.open(img.src, '_blank');
+            }
         }
 
         function autoExpand(el) {
@@ -303,19 +460,27 @@
         }
 
         function initScratch() {
-            const can = document.getElementById('scratch-canvas'), ctx = can.getContext('2d');
-            ctx.fillStyle = "#d1d1d1"; ctx.fillRect(0,0,can.width,can.height);
+            const can = document.getElementById('scratch-canvas');
+            // Size the canvas's drawing surface to match its actual rendered box,
+            // so the scratch coordinates always line up with where the user touches.
+            const rect = can.getBoundingClientRect();
+            can.width = rect.width;
+            can.height = rect.height;
+
+            const ctx = can.getContext('2d');
+            ctx.fillStyle = "#d1d1d1"; ctx.fillRect(0, 0, can.width, can.height);
             ctx.globalCompositeOperation = 'destination-out';
             let painting = false;
             const draw = (e) => {
                 if(!painting) return;
                 const r = can.getBoundingClientRect();
-                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - r.left;
-                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - r.top;
-                ctx.beginPath(); ctx.arc(x,y,25,0,6.28); ctx.fill();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                const x = clientX - r.left, y = clientY - r.top;
+                ctx.beginPath(); ctx.arc(x, y, 25, 0, 6.28); ctx.fill();
                 document.getElementById('scratch-next').style.display = 'block';
             };
-            can.onmousedown = can.ontouchstart = () => painting = true;
+            can.onmousedown = can.ontouchstart = (e) => { painting = true; draw(e); };
             can.onmouseup = can.ontouchend = () => painting = false;
             can.onmousemove = can.ontouchmove = draw;
         }
@@ -338,8 +503,44 @@
 
         function updateGallery() {
             const img = document.getElementById('gallery-img');
-            img.src = photoArray[photoIndex];
-            document.getElementById('slide-num').innerText = `${photoIndex + 1} / ${photoArray.length}`;
+            const container = document.querySelector('.slideshow-container');
+            const tag = document.getElementById('slide-tag');
+            const color = slideColors[photoIndex % slideColors.length];
+            const t = transitions[photoIndex % transitions.length];
+
+            // Instantly hide the current photo, swap the source, then fly the new one in
+            img.style.opacity = 0;
+
+            setTimeout(() => {
+                img.src = photoArray[photoIndex];
+                container.style.borderColor = color;
+                container.style.boxShadow = `0 10px 30px rgba(0,0,0,0.5), 0 0 25px ${color}88`;
+                tag.style.background = color;
+
+                img.style.setProperty('--tx-from', t.tx);
+                img.style.setProperty('--ty-from', t.ty);
+                img.style.setProperty('--scale-from', t.scale);
+                img.style.setProperty('--rot-from', t.rot);
+
+                img.classList.remove('gallery-img-anim');
+                void img.offsetWidth; // force reflow so the animation restarts every time
+                img.classList.add('gallery-img-anim');
+                img.style.opacity = '';
+            }, 60);
+
+            tag.innerText = `${photoIndex + 1} / ${photoArray.length}`;
+            renderDots(color);
+        }
+
+        function renderDots(activeColor) {
+            const dotsContainer = document.getElementById('slide-dots');
+            dotsContainer.innerHTML = '';
+            photoArray.forEach((_, i) => {
+                const dot = document.createElement('span');
+                dot.className = 'dot' + (i === photoIndex ? ' active-dot' : '');
+                dot.style.background = i === photoIndex ? activeColor : 'rgba(255,255,255,0.3)';
+                dotsContainer.appendChild(dot);
+            });
         }
 
         function nextPhoto() {
@@ -347,9 +548,21 @@
             if(photoIndex < photoArray.length) {
                 updateGallery();
             } else {
-                showView('v-letter');
-                startTyping();
+                buildMemoryWall();
+                showView('v-collage');
             }
+        }
+
+        function buildMemoryWall() {
+            const grid = document.getElementById('collage-grid');
+            grid.innerHTML = '';
+            photoArray.forEach((url, i) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.style.borderColor = slideColors[i % slideColors.length];
+                img.style.animationDelay = (i * 0.08) + 's';
+                grid.appendChild(img);
+            });
         }
 
         function startTyping() {
